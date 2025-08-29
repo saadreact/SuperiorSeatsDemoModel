@@ -1,78 +1,87 @@
 import React, { useState, useRef, useEffect, Suspense } from 'react';
 import { Canvas, useFrame, useLoader } from '@react-three/fiber';
-import { OrbitControls, Environment, useGLTF, Text, Html } from '@react-three/drei';
+import { OrbitControls, Environment, useGLTF, Text, Html, ContactShadows } from '@react-three/drei';
 import * as THREE from 'three';
 import './App.css';
 
-// Generate texture patterns with more sophisticated options
-const generateTexture = (type, color, pattern = 'none', stitching = 'none') => {
+// Generate high-quality texture patterns with metallic support
+const generateTexture = (type, color, pattern = 'none', stitching = 'none', isMetallic = false) => {
   const canvas = document.createElement('canvas');
-  canvas.width = 512;
-  canvas.height = 512;
+  canvas.width = 1024;
+  canvas.height = 1024;
   const ctx = canvas.getContext('2d');
 
   // Base color
   ctx.fillStyle = color;
-  ctx.fillRect(0, 0, 512, 512);
+  ctx.fillRect(0, 0, 1024, 1024);
 
   if (type === 'pebbled') {
-    // Add pebbled texture
-    for (let i = 0; i < 2000; i++) {
-      const x = Math.random() * 512;
-      const y = Math.random() * 512;
-      const radius = Math.random() * 3 + 1;
+    // Enhanced pebbled texture
+    for (let i = 0; i < 3000; i++) {
+      const x = Math.random() * 1024;
+      const y = Math.random() * 1024;
+      const radius = Math.random() * 4 + 1;
       const alpha = Math.random() * 0.4 + 0.1;
       
       ctx.beginPath();
       ctx.arc(x, y, radius, 0, Math.PI * 2);
       ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
       ctx.fill();
+      
+      // Add depth
+      ctx.beginPath();
+      ctx.arc(x + 1, y + 1, radius * 0.7, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(0, 0, 0, ${alpha * 0.3})`;
+      ctx.fill();
     }
   } else if (type === 'leather') {
-    // Add leather texture with wrinkles
-    for (let i = 0; i < 100; i++) {
-      const x = Math.random() * 512;
-      const y = Math.random() * 512;
-      const width = Math.random() * 30 + 15;
-      const height = Math.random() * 40 + 20;
+    // Enhanced leather texture with realistic grain
+    for (let i = 0; i < 150; i++) {
+      const x = Math.random() * 1024;
+      const y = Math.random() * 1024;
+      const width = Math.random() * 40 + 20;
+      const height = Math.random() * 50 + 25;
       
-      ctx.fillStyle = `rgba(0, 0, 0, ${Math.random() * 0.15})`;
+      ctx.fillStyle = `rgba(0, 0, 0, ${Math.random() * 0.2})`;
       ctx.fillRect(x, y, width, height);
     }
     
-    // Add leather grain
-    for (let i = 0; i < 50; i++) {
-      const x = Math.random() * 512;
-      const y = Math.random() * 512;
-      const length = Math.random() * 100 + 50;
-      const width = Math.random() * 2 + 1;
+    // Add leather grain patterns
+    for (let i = 0; i < 80; i++) {
+      const x = Math.random() * 1024;
+      const y = Math.random() * 1024;
+      const length = Math.random() * 120 + 60;
+      const width = Math.random() * 3 + 1;
       
-      ctx.strokeStyle = `rgba(0, 0, 0, ${Math.random() * 0.1})`;
+      ctx.strokeStyle = `rgba(0, 0, 0, ${Math.random() * 0.15})`;
       ctx.lineWidth = width;
       ctx.beginPath();
       ctx.moveTo(x, y);
-      ctx.lineTo(x + length, y + Math.random() * 20 - 10);
+      ctx.lineTo(x + length, y + Math.random() * 30 - 15);
       ctx.stroke();
     }
   } else if (type === 'smooth') {
-    // Add subtle noise for smooth texture
-    for (let i = 0; i < 1000; i++) {
-      const x = Math.random() * 512;
-      const y = Math.random() * 512;
-      const alpha = Math.random() * 0.08;
+    // Enhanced smooth texture with subtle variations
+    for (let i = 0; i < 2000; i++) {
+      const x = Math.random() * 1024;
+      const y = Math.random() * 1024;
+      const alpha = Math.random() * 0.1;
       
       ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
-      ctx.fillRect(x, y, 1, 1);
+      ctx.fillRect(x, y, 2, 2);
     }
   }
 
-  // Add pattern overlays
+  // Enhanced pattern overlays
   if (pattern === 'diamond') {
-    ctx.strokeStyle = `rgba(255, 255, 255, 0.3)`;
-    ctx.lineWidth = 2;
-    const size = 40;
-    for (let x = 0; x < 512; x += size) {
-      for (let y = 0; y < 512; y += size) {
+    // Dark strokes in multiply-like fashion for depth, with subtle highlights for shine
+    const size = 60;
+    ctx.save();
+    ctx.globalCompositeOperation = 'multiply';
+    ctx.strokeStyle = `rgba(0, 0, 0, ${isMetallic ? 0.55 : 0.65})`;
+    ctx.lineWidth = 2.5;
+    for (let x = 0; x < 1024; x += size) {
+      for (let y = 0; y < 1024; y += size) {
         ctx.beginPath();
         ctx.moveTo(x + size/2, y);
         ctx.lineTo(x + size, y + size/2);
@@ -82,63 +91,100 @@ const generateTexture = (type, color, pattern = 'none', stitching = 'none') => {
         ctx.stroke();
       }
     }
-  } else if (pattern === 'quilted') {
-    ctx.strokeStyle = `rgba(255, 255, 255, 0.4)`;
+    ctx.restore();
+
+    // Subtle inner highlight to simulate stitching catch-light
+    ctx.save();
+    ctx.globalCompositeOperation = 'screen';
+    ctx.strokeStyle = `rgba(255, 255, 255, ${isMetallic ? 0.18 : 0.12})`;
     ctx.lineWidth = 1;
-    const size = 30;
-    for (let x = 0; x < 512; x += size) {
-      for (let y = 0; y < 512; y += size) {
+    const inner = size * 0.6;
+    const off = (size - inner) / 2;
+    for (let x = 0; x < 1024; x += size) {
+      for (let y = 0; y < 1024; y += size) {
         ctx.beginPath();
-        ctx.arc(x + size/2, y + size/2, size/3, 0, Math.PI * 2);
+        ctx.moveTo(x + off + inner/2, y + off);
+        ctx.lineTo(x + off + inner, y + off + inner/2);
+        ctx.lineTo(x + off + inner/2, y + off + inner);
+        ctx.lineTo(x + off, y + off + inner/2);
+        ctx.closePath();
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+  } else if (pattern === 'quilted') {
+    ctx.strokeStyle = isMetallic ? `rgba(255, 255, 255, 0.5)` : `rgba(255, 255, 255, 0.4)`;
+    ctx.lineWidth = 2;
+    const size = 45;
+    for (let x = 0; x < 1024; x += size) {
+      for (let y = 0; y < 1024; y += size) {
+        ctx.beginPath();
+        ctx.arc(x + size/2, y + size/2, size/2.5, 0, Math.PI * 2);
+        ctx.stroke();
+        
+        // Add inner circle
+        ctx.beginPath();
+        ctx.arc(x + size/2, y + size/2, size/4, 0, Math.PI * 2);
+        ctx.strokeStyle = isMetallic ? `rgba(255, 255, 255, 0.2)` : `rgba(255, 255, 255, 0.15)`;
+        ctx.lineWidth = 1;
         ctx.stroke();
       }
     }
   } else if (pattern === 'perforated') {
-    ctx.fillStyle = `rgba(0, 0, 0, 0.2)`;
-    const size = 8;
-    for (let x = size; x < 512; x += size * 2) {
-      for (let y = size; y < 512; y += size * 2) {
+    ctx.fillStyle = `rgba(0, 0, 0, 0.3)`;
+    const size = 12;
+    for (let x = size; x < 1024; x += size * 2) {
+      for (let y = size; y < 1024; y += size * 2) {
         ctx.beginPath();
         ctx.arc(x, y, size/2, 0, Math.PI * 2);
         ctx.fill();
+        
+        // Add highlight for realism
+        if (isMetallic) {
+          ctx.beginPath();
+          ctx.arc(x - 1, y - 1, size/3, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(255, 255, 255, 0.4)`;
+          ctx.fill();
+          ctx.fillStyle = `rgba(0, 0, 0, 0.3)`;
+        }
       }
     }
   }
 
-  // Add stitching patterns
+  // Enhanced stitching patterns
   if (stitching === 'straight') {
-    ctx.strokeStyle = `rgba(0, 0, 0, 0.6)`;
-    ctx.lineWidth = 2;
-    ctx.setLineDash([5, 5]);
-    for (let y = 20; y < 512; y += 40) {
+    ctx.strokeStyle = `rgba(0, 0, 0, 0.7)`;
+    ctx.lineWidth = 3;
+    ctx.setLineDash([8, 8]);
+    for (let y = 30; y < 1024; y += 60) {
       ctx.beginPath();
       ctx.moveTo(0, y);
-      ctx.lineTo(512, y);
+      ctx.lineTo(1024, y);
       ctx.stroke();
     }
   } else if (stitching === 'cross') {
-    ctx.strokeStyle = `rgba(0, 0, 0, 0.6)`;
-    ctx.lineWidth = 2;
-    ctx.setLineDash([3, 3]);
-    for (let x = 20; x < 512; x += 40) {
-      for (let y = 20; y < 512; y += 40) {
+    ctx.strokeStyle = `rgba(0, 0, 0, 0.7)`;
+    ctx.lineWidth = 3;
+    ctx.setLineDash([5, 5]);
+    for (let x = 30; x < 1024; x += 60) {
+      for (let y = 30; y < 1024; y += 60) {
         ctx.beginPath();
-        ctx.moveTo(x - 10, y - 10);
-        ctx.lineTo(x + 10, y + 10);
-        ctx.moveTo(x + 10, y - 10);
-        ctx.lineTo(x - 10, y + 10);
+        ctx.moveTo(x - 15, y - 15);
+        ctx.lineTo(x + 15, y + 15);
+        ctx.moveTo(x + 15, y - 15);
+        ctx.lineTo(x - 15, y + 15);
         ctx.stroke();
       }
     }
   } else if (stitching === 'zigzag') {
-    ctx.strokeStyle = `rgba(0, 0, 0, 0.6)`;
-    ctx.lineWidth = 2;
-    for (let y = 20; y < 512; y += 30) {
+    ctx.strokeStyle = `rgba(0, 0, 0, 0.7)`;
+    ctx.lineWidth = 3;
+    for (let y = 30; y < 1024; y += 45) {
       ctx.beginPath();
       ctx.moveTo(0, y);
-      for (let x = 0; x < 512; x += 20) {
-        ctx.lineTo(x + 10, y + 10);
-        ctx.lineTo(x + 20, y);
+      for (let x = 0; x < 1024; x += 30) {
+        ctx.lineTo(x + 15, y + 15);
+        ctx.lineTo(x + 30, y);
       }
       ctx.stroke();
     }
@@ -146,6 +192,19 @@ const generateTexture = (type, color, pattern = 'none', stitching = 'none') => {
 
   return canvas.toDataURL();
 };
+
+// Auto-rotating group component
+// function AutoRotatingChair({ children, isAutoRotating = true }) {
+//   const groupRef = useRef();
+//   
+//   useFrame((state, delta) => {
+//     if (groupRef.current && isAutoRotating) {
+//       groupRef.current.rotation.y += delta * 0.2; // Slow rotation
+//     }
+//   });
+//   
+//   return <group ref={groupRef}>{children}</group>;
+// }
 
 // Loading component
 function Loader() {
@@ -173,7 +232,7 @@ function ErrorFallback({ error }) {
 }
 
 // Chair component that loads the GLB model
-function Chair({ materials, selectedPart, onPartClick, onModelLoad }) {
+function Chair({ materials, selectedPart, onPartClick, onModelLoad, isAutoRotating }) {
   const { scene } = useGLTF('/chair1_glb/chair1.glb');
   const chairRef = useRef();
   const [modelParts, setModelParts] = useState([]);
@@ -183,12 +242,30 @@ function Chair({ materials, selectedPart, onPartClick, onModelLoad }) {
   useEffect(() => {
     try {
       if (scene && onModelLoad) {
+        // Apply transform directly to the scene so bounds are correct
+        scene.position.set(0, -1.5, 0);
+        scene.scale.set(2.2, 2.2, 2.2);
+        scene.updateMatrixWorld(true);
+
         const parts = [];
         scene.traverse((child) => {
           if (child.isMesh) {
             // Store original material for reference
             if (!child.userData.originalMaterial) {
               child.userData.originalMaterial = child.material.clone();
+            }
+            // Also store base maps/colors so we can toggle patterns without changing material
+            if (!child.userData.baseMapStored) {
+              child.userData.baseColorHex = `#${child.material.color.getHexString()}`;
+              child.userData.baseMap = child.material.map || null;
+              child.userData.baseMapStored = true;
+            }
+            
+            // Enhance material properties for realism
+            if (child.material) {
+              child.material.envMapIntensity = 1.5;
+              child.material.roughness = 0.3;
+              child.material.metalness = 0.1;
             }
             
             // Add to parts list
@@ -204,8 +281,14 @@ function Chair({ materials, selectedPart, onPartClick, onModelLoad }) {
           }
         });
         
+        // Compute overall bounds for camera fitting (after transform)
+        const box = new THREE.Box3().setFromObject(scene);
+        const center = box.getCenter(new THREE.Vector3());
+        const sphere = box.getBoundingSphere(new THREE.Sphere());
+        const radius = sphere.radius || box.getSize(new THREE.Vector3()).length() * 0.5;
+        
         setModelParts(parts);
-        onModelLoad(parts);
+        onModelLoad(parts, { center, radius });
       }
     } catch (err) {
       setError(err);
@@ -213,7 +296,7 @@ function Chair({ materials, selectedPart, onPartClick, onModelLoad }) {
     }
   }, [scene, onModelLoad]);
 
-  // Apply materials to the model
+  // Apply materials to the model with enhanced properties
   useEffect(() => {
     if (scene) {
       scene.traverse((child) => {
@@ -222,13 +305,14 @@ function Chair({ materials, selectedPart, onPartClick, onModelLoad }) {
           const partName = child.name.toLowerCase();
           if (materials[partName]) {
             child.material = materials[partName];
+            child.material.needsUpdate = true;
           }
         }
       });
     }
   }, [scene, materials]);
 
-  // Handle part selection and zoom
+  // Handle part selection
   const handlePartClick = (event) => {
     event.stopPropagation();
     const partName = event.object.userData.partName;
@@ -237,14 +321,14 @@ function Chair({ materials, selectedPart, onPartClick, onModelLoad }) {
     }
   };
 
-  // Highlight selected part
+  // Highlight selected part with enhanced glow
   useEffect(() => {
     if (scene) {
       scene.traverse((child) => {
         if (child.isMesh) {
           if (child.name === selectedPart) {
-            child.material.emissive = new THREE.Color(0x333333);
-            child.material.emissiveIntensity = 0.2;
+            child.material.emissive = new THREE.Color(0x444444);
+            child.material.emissiveIntensity = 0.3;
           } else {
             child.material.emissive = new THREE.Color(0x000000);
             child.material.emissiveIntensity = 0;
@@ -263,85 +347,93 @@ function Chair({ materials, selectedPart, onPartClick, onModelLoad }) {
       ref={chairRef}
       object={scene} 
       onClick={handlePartClick}
-      scale={[1.8, 1.8, 1.8]}
-      position={[0, -0.3, 0]}
     />
   );
 }
 
-// Camera controller for zooming to parts
-function CameraController({ selectedPart, modelParts, isZoomed, onZoomChange }) {
+// Enhanced camera controller
+function CameraController({ selectedPart, modelParts, isZoomed, onZoomChange, bounds, zoomOnClickEnabled, isAutoRotating }) {
   const controlsRef = useRef();
   const [isAnimating, setIsAnimating] = useState(false);
+  const hasFittedRef = useRef(false);
 
-  useEffect(() => {
-    if (selectedPart && modelParts.length > 0 && !isAnimating) {
-      const part = modelParts.find(p => p.name === selectedPart);
-      if (part && controlsRef.current) {
-        setIsAnimating(true);
-        
-        // Calculate target position (center of the part)
-        const boundingBox = part.boundingBox;
-        const center = boundingBox.getCenter(new THREE.Vector3());
-        
-        // Calculate distance based on part size - much closer for detail view
-        const size = boundingBox.getSize(new THREE.Vector3());
-        const maxDim = Math.max(size.x, size.y, size.z);
-        const distance = maxDim * 1.2; // Much closer zoom for better detail
-        
-        // Animate camera to part
-        controlsRef.current.target.copy(center);
+  // Fit camera to whole model using bounds
+  const fitToBounds = () => {
+    if (!bounds || !controlsRef.current) return;
+    const camera = controlsRef.current.object;
+    const target = bounds.center.clone();
+    const radius = bounds.radius;
+    const fov = (camera.fov * Math.PI) / 180;
+    const distance = radius / Math.tan(fov / 2) + radius * 0.5; // comfortable padding
+
+    controlsRef.current.target.copy(target);
+    controlsRef.current.update();
+
+    const start = camera.position.clone();
+    const end = target.clone().add(new THREE.Vector3(distance, distance * 0.25, distance));
+    let t = 0;
+    const animate = () => {
+      t += 0.04;
+      if (t <= 1) {
+        camera.position.lerpVectors(start, end, t);
         controlsRef.current.update();
-        
-        // Smooth camera movement
-        const camera = controlsRef.current.object;
-        const startPosition = camera.position.clone();
-        const endPosition = center.clone().add(
-          new THREE.Vector3(distance, distance * 0.2, distance)
-        );
-        
-        let progress = 0;
-        const animate = () => {
-          progress += 0.04;
-          if (progress <= 1) {
-            camera.position.lerpVectors(startPosition, endPosition, progress);
-            controlsRef.current.update();
-            requestAnimationFrame(animate);
-          } else {
-            setIsAnimating(false);
-            onZoomChange(true);
-          }
-        };
-        animate();
+        requestAnimationFrame(animate);
       }
-    }
-  }, [selectedPart, modelParts, isAnimating, onZoomChange]);
+    };
+    animate();
+  };
 
-  // Only reset zoom when explicitly requested via resetZoom button
+  // Initial fit
   useEffect(() => {
-    if (!isZoomed && controlsRef.current && !isAnimating) {
+    if (bounds && !hasFittedRef.current) {
+      hasFittedRef.current = true;
+      fitToBounds();
+    }
+  }, [bounds]);
+
+  // Focus on selected part (zoom in), but only if zoomOnClickEnabled is true
+  useEffect(() => {
+    if (!zoomOnClickEnabled) return;
+    if (selectedPart && modelParts.length > 0 && controlsRef.current) {
+      const part = modelParts.find(p => p.name === selectedPart);
+      if (!part) return;
       setIsAnimating(true);
+      const boundingBox = part.boundingBox;
+      const center = boundingBox.getCenter(new THREE.Vector3());
+      const size = boundingBox.getSize(new THREE.Vector3());
+      const maxDim = Math.max(size.x, size.y, size.z);
+
       const camera = controlsRef.current.object;
+      const fov = (camera.fov * Math.PI) / 180;
+      const distance = (maxDim * 0.55) / Math.tan(fov / 2);
+
+      controlsRef.current.target.copy(center);
+      controlsRef.current.update();
+
       const startPosition = camera.position.clone();
-      const endPosition = new THREE.Vector3(4, 2.5, 4);
-      const startTarget = controlsRef.current.target.clone();
-      const endTarget = new THREE.Vector3(0, 0, 0);
-      
+      const endPosition = center.clone().add(new THREE.Vector3(distance, distance * 0.15, distance));
       let progress = 0;
       const animate = () => {
-        progress += 0.03;
+        progress += 0.05;
         if (progress <= 1) {
           camera.position.lerpVectors(startPosition, endPosition, progress);
-          controlsRef.current.target.lerpVectors(startTarget, endTarget, progress);
           controlsRef.current.update();
           requestAnimationFrame(animate);
         } else {
           setIsAnimating(false);
+          onZoomChange(true);
         }
       };
       animate();
     }
-  }, [isZoomed, isAnimating]);
+  }, [selectedPart, modelParts, onZoomChange, zoomOnClickEnabled]);
+
+  // Reset zoom fits back to full model
+  useEffect(() => {
+    if (!isZoomed) {
+      fitToBounds();
+    }
+  }, [isZoomed]);
 
   return (
     <OrbitControls 
@@ -349,18 +441,20 @@ function CameraController({ selectedPart, modelParts, isZoomed, onZoomChange }) 
       enablePan={true}
       enableZoom={true}
       enableRotate={true}
-      minDistance={0.8}
-      maxDistance={isZoomed ? 5 : 12}
+      minDistance={0.2}
+      maxDistance={50} // never restrict zooming out
       dampingFactor={0.05}
       enableDamping={true}
-      rotateSpeed={1.0}
-      panSpeed={1.0}
-      zoomSpeed={1.0}
+      rotateSpeed={0.9}
+      panSpeed={0.9}
+      zoomSpeed={1.1}
       enableKeys={true}
       keyPanSpeed={7.0}
       screenSpacePanning={true}
-      maxPolarAngle={Math.PI}
-      minPolarAngle={0}
+      maxPolarAngle={Math.PI - 0.05}
+      minPolarAngle={0.05}
+      autoRotate={isAutoRotating}
+      autoRotateSpeed={0.2}
     />
   );
 }
@@ -403,6 +497,82 @@ function PatternPreview({ pattern, name, isSelected, onClick }) {
   );
 }
 
+// PBR texture set cache loader (uses assets from 'Modeller new')
+const pbrCache = {};
+const getPBRUrls = (setId) => {
+  const dir = setId === '02' ? '../../Modeller new/textures/02/' : '../../Modeller new/textures/01/';
+  return {
+    color: new URL(`${dir}01 - Default_Base_color.jpg`, import.meta.url).href,
+    normal: new URL(`${dir}01 - Default_Normal_OpenGL.jpg`, import.meta.url).href,
+    roughness: new URL(`${dir}01 - Default_Roughness.jpg`, import.meta.url).href,
+    metalness: new URL(`${dir}01 - Default_Metallic.jpg`, import.meta.url).href,
+    ao: new URL(`${dir}01 - Default_Mixed_AO.jpg`, import.meta.url).href,
+  };
+};
+const loadPBRSet = (setId) => {
+  if (pbrCache[setId]) return pbrCache[setId];
+  const loader = new THREE.TextureLoader();
+  const urls = getPBRUrls(setId);
+  const tColor = loader.load(urls.color);
+  tColor.colorSpace = THREE.SRGBColorSpace;
+  const tNormal = loader.load(urls.normal);
+  const tRough = loader.load(urls.roughness);
+  const tMetal = loader.load(urls.metalness);
+  const tAO = loader.load(urls.ao);
+  [tColor, tNormal, tRough, tMetal, tAO].forEach(t => {
+    t.wrapS = THREE.RepeatWrapping;
+    t.wrapT = THREE.RepeatWrapping;
+    t.repeat.set(1, 1);
+    t.generateMipmaps = true;
+    t.minFilter = THREE.LinearMipmapLinearFilter;
+    t.magFilter = THREE.LinearFilter;
+  });
+  pbrCache[setId] = { map: tColor, normalMap: tNormal, roughnessMap: tRough, metalnessMap: tMetal, aoMap: tAO };
+  return pbrCache[setId];
+};
+
+// Apply PBR texture set to a specific mesh material (non-destructive to other properties)
+const applyPBRSetToPart = (partName, setId, modelParts, materials, setMaterials) => {
+  const lower = partName.toLowerCase();
+  const part = modelParts.find(p => p.name.toLowerCase() === lower);
+  if (!part || !part.mesh) return;
+
+  // Helper to clone-and-apply to one mesh name
+  const applyToMesh = (mesh, keyName) => {
+    const current = materials[keyName] || mesh.material;
+    const updated = current.clone();
+    if (setId === 'none') {
+      updated.map = mesh.userData.baseMap || null;
+      updated.normalMap = null;
+      updated.roughnessMap = null;
+      updated.metalnessMap = null;
+      updated.aoMap = null;
+      updated.color = new THREE.Color(mesh.userData.baseColorHex || `#${current.color.getHexString()}`);
+    } else {
+      const maps = loadPBRSet(setId) || loadPBRSet('01');
+      updated.color = new THREE.Color('#ffffff');
+      updated.map = maps.map;
+      updated.normalMap = maps.normalMap;
+      updated.roughnessMap = maps.roughnessMap;
+      updated.metalnessMap = maps.metalnessMap;
+      updated.aoMap = maps.aoMap;
+      updated.roughness = 0.5;
+      updated.metalness = 0.4;
+    }
+    updated.needsUpdate = true;
+    setMaterials(prev => ({ ...prev, [keyName]: updated }));
+  };
+
+  // Apply to the clicked mesh and any siblings that share its name stem (covers multi-piece headrests)
+  const stem = part.mesh.name.toLowerCase().split(/[^a-z0-9]+/)[0];
+  modelParts.forEach(p => {
+    const key = p.name.toLowerCase();
+    if (key.includes(stem)) {
+      applyToMesh(p.mesh, key);
+    }
+  });
+};
+
 // Main App component
 function App() {
   const [selectedPart, setSelectedPart] = useState(null);
@@ -411,54 +581,66 @@ function App() {
   const [modelParts, setModelParts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isZoomed, setIsZoomed] = useState(false);
+  const [isAutoRotating, setIsAutoRotating] = useState(true);
+  const [clickToZoomEnabled, setClickToZoomEnabled] = useState(true);
+  const [modelBounds, setModelBounds] = useState(null);
+  
   const [availableMaterials, setAvailableMaterials] = useState([
     { 
       name: 'Anchorage', 
       color: new THREE.Color('#2c3e50'), 
       type: 'pebbled', 
-      texture: null 
+      texture: null,
+      metallic: false
     },
     { 
-      name: 'Leon', 
+      name: 'Leon Premium', 
       color: new THREE.Color('#34495e'), 
       type: 'smooth', 
-      texture: null 
+      texture: null,
+      metallic: true
     },
     { 
-      name: 'Marlin', 
+      name: 'Marlin Leather', 
       color: new THREE.Color('#7f8c8d'), 
       type: 'leather', 
-      texture: null 
+      texture: null,
+      metallic: false
     },
     { 
       name: 'Navy Blue', 
       color: new THREE.Color('#1e3a8a'), 
       type: 'smooth', 
-      texture: null 
+      texture: null,
+      metallic: false
     },
     { 
-      name: 'Charcoal', 
+      name: 'Charcoal Metallic', 
       color: new THREE.Color('#374151'), 
       type: 'pebbled', 
-      texture: null 
+      texture: null,
+      metallic: true
     },
     { 
       name: 'Cream', 
       color: new THREE.Color('#fef3c7'), 
       type: 'smooth', 
-      texture: null 
+      texture: null,
+      metallic: false
     },
     { 
       name: 'Burgundy', 
       color: new THREE.Color('#7c2d12'), 
       type: 'leather', 
-      texture: null 
+      texture: null,
+      metallic: false
     },
     { 
       name: 'Forest Green', 
       color: new THREE.Color('#166534'), 
       type: 'pebbled', 
-      texture: null 
+      texture: null,
+      metallic: false
     }
   ]);
   const [selectedMaterial, setSelectedMaterial] = useState(availableMaterials[0]);
@@ -479,102 +661,170 @@ function App() {
   ]);
   const [selectedStitching, setSelectedStitching] = useState(availableStitching[0]);
 
-  // Generate textures for materials
+  // Generate textures for materials with metallic support
   useEffect(() => {
     const materialsWithTextures = availableMaterials.map(material => ({
       ...material,
-      texture: generateTexture(material.type, `#${material.color.getHexString()}`, selectedPattern.type, selectedStitching.type)
+      texture: generateTexture(
+        material.type, 
+        `#${material.color.getHexString()}`, 
+        selectedPattern.type, 
+        selectedStitching.type,
+        material.metallic
+      )
     }));
     setAvailableMaterials(materialsWithTextures);
     setSelectedMaterial(materialsWithTextures[0]);
   }, [selectedPattern, selectedStitching]);
 
   // Handle model load
-  const handleModelLoad = (parts) => {
+  const handleModelLoad = (parts, bounds) => {
     setModelParts(parts);
-    // Extract part names for the UI
     const partNames = parts.map(part => part.name);
     setAvailableParts(partNames);
+    setModelBounds(bounds);
     setIsLoading(false);
   };
 
-  // Apply material to selected part
+  // Compute a good camera distance from bounds and fov
+  const getFitDistance = (radius, fovDeg = 60) => {
+    const fov = (fovDeg * Math.PI) / 180;
+    return radius / Math.sin(fov / 2);
+  };
+
+  // Apply enhanced material to selected part
   const applyMaterial = (partName, material) => {
     try {
       const textureLoader = new THREE.TextureLoader();
-      const texture = material.texture ? textureLoader.load(material.texture) : null;
+      const colorMap = material.texture ? textureLoader.load(material.texture) : null;
       
-      if (texture) {
-        texture.wrapS = THREE.RepeatWrapping;
-        texture.wrapT = THREE.RepeatWrapping;
-        texture.repeat.set(2, 2);
+      if (colorMap) {
+        colorMap.wrapS = THREE.RepeatWrapping;
+        colorMap.wrapT = THREE.RepeatWrapping;
+        colorMap.repeat.set(3, 3);
+        colorMap.generateMipmaps = true;
+        colorMap.minFilter = THREE.LinearMipmapLinearFilter;
+        colorMap.magFilter = THREE.LinearFilter;
+      }
+
+      // If a part already has a material with PBR maps, reuse them for realism
+      let preservedMaps = {};
+      const lower = partName.toLowerCase();
+      const existing = modelParts.find(p => p.name.toLowerCase() === lower);
+      if (existing && existing.mesh && existing.mesh.material) {
+        const m = existing.mesh.material;
+        preservedMaps = {
+          normalMap: m.normalMap || null,
+          roughnessMap: m.roughnessMap || null,
+          metalnessMap: m.metalnessMap || null,
+          aoMap: m.aoMap || null,
+          displacementMap: m.displacementMap || null
+        };
       }
 
       const newMaterial = new THREE.MeshStandardMaterial({
         color: material.color,
-        roughness: material.type === 'leather' ? 0.3 : material.type === 'pebbled' ? 0.8 : 0.6,
-        metalness: 0.1,
-        map: texture
+        roughness: material.metallic ? 0.15 : (material.type === 'leather' ? 0.4 : material.type === 'pebbled' ? 0.75 : 0.55),
+        metalness: material.metallic ? 0.7 : 0.15,
+        map: colorMap,
+        envMapIntensity: material.metallic ? 2.0 : 1.2,
+        transparent: false,
+        side: THREE.FrontSide,
+        ...preservedMaps
       });
 
       setMaterials(prev => ({
         ...prev,
-        [partName.toLowerCase()]: newMaterial
+        [lower]: newMaterial
       }));
     } catch (error) {
       console.error('Error applying material:', error);
     }
   };
 
+  // Apply pattern to a specific part's material
+  const applyPatternToPart = (partName, patternType) => {
+    const lower = partName.toLowerCase();
+    const part = modelParts.find(p => p.name.toLowerCase() === lower);
+    if (!part || !part.mesh) return;
+
+    const mesh = part.mesh;
+    const currentMaterial = materials[lower] || mesh.material;
+
+    // Restore base (no pattern) without changing color/material
+    if (patternType === 'none') {
+      const restored = currentMaterial.clone();
+      restored.map = mesh.userData.baseMap || null;
+      restored.needsUpdate = true;
+      setMaterials(prev => ({
+        ...prev,
+        [lower]: restored
+      }));
+      return;
+    }
+
+    // Build a patterned color map procedurally using the current base color
+    const baseHex = mesh.userData.baseColorHex || `#${currentMaterial.color.getHexString()}`;
+    const isMetallic = (currentMaterial.metalness || 0) >= 0.5;
+    const dataUrl = generateTexture('smooth', baseHex, patternType, selectedStitching.type, isMetallic);
+
+    const textureLoader = new THREE.TextureLoader();
+    const colorMap = textureLoader.load(dataUrl);
+    colorMap.wrapS = THREE.RepeatWrapping;
+    colorMap.wrapT = THREE.RepeatWrapping;
+    colorMap.repeat.set(3, 3);
+    colorMap.generateMipmaps = true;
+    colorMap.minFilter = THREE.LinearMipmapLinearFilter;
+    colorMap.magFilter = THREE.LinearFilter;
+
+    // Preserve existing PBR maps and color; only swap the base map
+    const updated = currentMaterial.clone();
+    updated.map = colorMap;
+    updated.needsUpdate = true;
+
+    setMaterials(prev => ({
+      ...prev,
+      [lower]: updated
+    }));
+  };
+
   // Handle part selection
   const handlePartClick = (partName, mesh) => {
     setSelectedPart(partName);
-    // Don't automatically apply material - just zoom to the part
+    if (clickToZoomEnabled) {
+      setIsZoomed(true);
+    }
   };
 
-  // Handle material selection
+  // Handle material selection - only when explicitly chosen
   const handleMaterialSelect = (material) => {
     setSelectedMaterial(material);
-    
-    // Apply to currently selected part only if a part is selected
     if (selectedPart) {
       applyMaterial(selectedPart, material);
     }
   };
 
-  // Handle pattern selection
+  // Handle pattern selection - mapped to Modeller-new PBR sets
   const handlePatternSelect = (pattern) => {
     setSelectedPattern(pattern);
-    
-    // Regenerate textures with new pattern
-    const materialsWithTextures = availableMaterials.map(material => ({
-      ...material,
-      texture: generateTexture(material.type, `#${material.color.getHexString()}`, pattern.type, selectedStitching.type)
-    }));
-    setAvailableMaterials(materialsWithTextures);
-    
-    // Apply to currently selected part only if a part is selected
-    if (selectedPart && selectedMaterial) {
-      const updatedMaterial = materialsWithTextures.find(m => m.name === selectedMaterial.name);
-      if (updatedMaterial) {
-        setSelectedMaterial(updatedMaterial);
-        applyMaterial(selectedPart, updatedMaterial);
-      }
-    }
+    if (!selectedPart) return;
+
+    // Map UI patterns to available folders
+    // Use set '02' for Diamond by default (falls back internally to '01' if not found)
+    const setId = pattern.type === 'diamond' ? '02' : 'none';
+    applyPBRSetToPart(selectedPart, setId, modelParts, materials, setMaterials);
   };
 
   // Handle stitching selection
   const handleStitchingSelect = (stitching) => {
     setSelectedStitching(stitching);
     
-    // Regenerate textures with new stitching
     const materialsWithTextures = availableMaterials.map(material => ({
       ...material,
-      texture: generateTexture(material.type, `#${material.color.getHexString()}`, selectedPattern.type, stitching.type)
+      texture: generateTexture(material.type, `#${material.color.getHexString()}`, selectedPattern.type, stitching.type, material.metallic)
     }));
     setAvailableMaterials(materialsWithTextures);
     
-    // Apply to currently selected part only if a part is selected
     if (selectedPart && selectedMaterial) {
       const updatedMaterial = materialsWithTextures.find(m => m.name === selectedMaterial.name);
       if (updatedMaterial) {
@@ -584,28 +834,31 @@ function App() {
     }
   };
 
-  // Reset view - clear selection but keep zoom
+  // Reset functions
   const resetView = () => {
     setSelectedPart(null);
-    // Don't reset zoom - let user control it manually
+    setIsAutoRotating(true);
   };
 
-  // Reset zoom only - return to full chair view
   const resetZoom = () => {
-    setIsZoomed(false);
+    if (modelBounds) {
+      setIsZoomed(false);
+    } else {
+      setIsZoomed(false);
+    }
+    setSelectedPart(null); // also deselect on zoom out
+    setIsAutoRotating(true);
   };
 
-  // Reset materials - clear materials but keep selection and zoom
   const resetMaterials = () => {
     setMaterials({});
-    // Don't reset selection or zoom - let user control them
   };
 
-  // Reset everything - complete reset
   const resetAll = () => {
     setMaterials({});
     setSelectedPart(null);
     setIsZoomed(false);
+    setIsAutoRotating(true);
     setSelectedMaterial(availableMaterials[0]);
     setSelectedPattern(availablePatterns[0]);
     setSelectedStitching(availableStitching[0]);
@@ -697,7 +950,7 @@ function App() {
         <div className="section">
           <h3>Material Information</h3>
           <div className="material-info">
-            <h4>{selectedMaterial.name}</h4>
+            <h4>{selectedMaterial.name} {selectedMaterial.metallic && '(Metallic)'}</h4>
             <p>
               {selectedMaterial.type === 'pebbled' && 'Pebbled-grain marine vinyl with subtle sheen'}
               {selectedMaterial.type === 'smooth' && 'Premium smooth vinyl with outstanding performance'}
@@ -708,6 +961,7 @@ function App() {
               <li>Water repellent</li>
               <li>Easy to clean</li>
               <li>Made in USA</li>
+              {selectedMaterial.metallic && <li>Metallic finish with enhanced shine</li>}
             </ul>
           </div>
         </div>
@@ -721,7 +975,7 @@ function App() {
             <p>3. Select surface pattern and stitching style</p>
             <p>4. Materials will be applied to the selected part</p>
             <p>5. Use "Reset Zoom" to return to full chair view</p>
-            <p>6. Use "Reset All" to clear all customizations</p>
+            <p>6. The chair auto-rotates for better viewing</p>
             <p><strong>Camera Controls:</strong></p>
             <p>• Left click + drag to rotate</p>
             <p>• Right click + drag to pan</p>
@@ -733,16 +987,44 @@ function App() {
       {/* Right Panel - 3D Viewer */}
       <div className="viewer-panel">
         <Canvas
-          camera={{ position: [4, 2.5, 4], fov: 75 }}
+          camera={{ position: [5, 3, 5], fov: 60 }}
           style={{ 
             background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
             width: '100%',
             height: '100%'
           }}
+          dpr={[1, 2]}
+          shadows
+          gl={{ antialias: true, shadowMapEnabled: true, shadowMapType: THREE.PCFSoftShadowMap, physicallyCorrectLights: true, toneMapping: THREE.ACESFilmicToneMapping, outputColorSpace: THREE.SRGBColorSpace }}
+          onPointerMissed={() => setSelectedPart(null)}
         >
-          <ambientLight intensity={0.4} />
-          <directionalLight position={[10, 10, 5]} intensity={1} />
-          <pointLight position={[-10, -10, -10]} intensity={0.5} />
+          {/* Global fill */}
+          <ambientLight intensity={0.25} />
+          <hemisphereLight args={[0xffffff, 0x222233, 0.5]} />
+          {/* Key light (front-right) */}
+          <directionalLight 
+            position={[6, 7, 8]} 
+            intensity={1.8} 
+            castShadow 
+            shadow-mapSize-width={2048} 
+            shadow-mapSize-height={2048}
+            shadow-bias={-0.0005}
+          />
+          {/* Fill light (front-left lower) */}
+          <directionalLight position={[-6, 3, 5]} intensity={0.8} />
+          {/* Rim light (behind) to pop backrest edges */}
+          <directionalLight position={[0, 6, -8]} intensity={1.0} />
+          {/* Focused spot to reveal backrest stitching */}
+          <spotLight 
+            position={[0, 8, 2]} 
+            intensity={1.6} 
+            angle={0.35} 
+            penumbra={0.7} 
+            castShadow 
+            shadow-mapSize-width={2048} 
+            shadow-mapSize-height={2048} 
+            shadow-bias={-0.0003}
+          />
           
           <Suspense fallback={<Loader />}>
             <Chair 
@@ -750,6 +1032,7 @@ function App() {
               selectedPart={selectedPart}
               onPartClick={handlePartClick}
               onModelLoad={handleModelLoad}
+              isAutoRotating={isAutoRotating}
             />
           </Suspense>
           
@@ -758,9 +1041,13 @@ function App() {
             modelParts={modelParts}
             isZoomed={isZoomed}
             onZoomChange={setIsZoomed}
+            bounds={modelBounds}
+            zoomOnClickEnabled={clickToZoomEnabled}
+            isAutoRotating={isAutoRotating}
           />
           
-          <Environment preset="studio" />
+          <ContactShadows opacity={0.35} scale={20} blur={2.5} far={8} color="#000000" />
+          <Environment preset="warehouse" />
         </Canvas>
         
         {/* Viewer Controls */}
@@ -769,6 +1056,13 @@ function App() {
           <button onClick={resetZoom}>Reset Zoom</button>
           <button onClick={resetMaterials}>Reset Materials</button>
           <button onClick={resetAll}>Reset All</button>
+          <button onClick={() => setIsAutoRotating(!isAutoRotating)}>
+            {isAutoRotating ? 'Stop Rotation' : 'Start Rotation'}
+          </button>
+          <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <input type="checkbox" checked={clickToZoomEnabled} onChange={(e) => setClickToZoomEnabled(e.target.checked)} />
+            Click to Zoom
+          </label>
         </div>
       </div>
     </div>

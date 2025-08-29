@@ -25,12 +25,12 @@ body {
 
 /* Left panel - Controls */
 .controls-panel {
-  width: 400px;
+  width: 420px;
   background: white;
   border-right: 1px solid #e2e8f0;
   overflow-y: auto;
   padding: 24px;
-  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+  box-shadow: 2px 0 15px rgba(0, 0, 0, 0.1);
   z-index: 10;
 }
 
@@ -74,14 +74,15 @@ body {
 }
 
 .selected-part-indicator {
-  background: #eff6ff;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
   border: 2px solid #3b82f6;
-  border-radius: 8px;
-  padding: 12px;
+  border-radius: 12px;
+  padding: 16px;
   margin-bottom: 16px;
   text-align: center;
   color: #1e40af;
   font-size: 14px;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
 }
 
 .part-button {
@@ -101,12 +102,14 @@ body {
   background: #f1f5f9;
   border-color: #cbd5e1;
   color: #334155;
+  transform: translateY(-1px);
 }
 
 .part-button.selected {
-  background: #3b82f6;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
   border-color: #3b82f6;
   color: white;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
 /* Materials grid */
@@ -124,32 +127,34 @@ body {
   border: 2px solid #e2e8f0;
   border-radius: 12px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
   background: white;
+  position: relative;
 }
 
 .material-preview:hover {
   border-color: #cbd5e1;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
 }
 
 .material-preview.selected {
   border-color: #3b82f6;
-  background: #eff6ff;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.25);
 }
 
 .material-swatch {
-  width: 60px;
-  height: 60px;
-  border-radius: 8px;
+  width: 70px;
+  height: 70px;
+  border-radius: 12px;
   margin-bottom: 8px;
   border: 2px solid #e2e8f0;
   background-size: cover;
   background-position: center;
   position: relative;
   overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .material-swatch::before {
@@ -159,13 +164,27 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
+  background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.2) 50%, transparent 70%);
   pointer-events: none;
+}
+
+.material-swatch::after {
+  content: '✨';
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  font-size: 12px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.material-preview:hover .material-swatch::after {
+  opacity: 1;
 }
 
 .material-name {
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   color: #374151;
   text-align: center;
 }
@@ -185,20 +204,20 @@ body {
   border: 2px solid #e2e8f0;
   border-radius: 12px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
   background: white;
 }
 
 .pattern-preview:hover {
   border-color: #cbd5e1;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
 }
 
 .pattern-preview.selected {
   border-color: #3b82f6;
-  background: #eff6ff;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.2);
 }
 
 .pattern-swatch {
@@ -255,20 +274,23 @@ body {
   background: #f1f5f9;
   border-color: #cbd5e1;
   color: #334155;
+  transform: translateY(-1px);
 }
 
 .stitching-button.selected {
-  background: #3b82f6;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
   border-color: #3b82f6;
   color: white;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
 /* Material info */
 .material-info {
-  background: #f8fafc;
-  padding: 20px;
-  border-radius: 12px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  padding: 24px;
+  border-radius: 16px;
   border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 .material-info h4 {
@@ -291,9 +313,9 @@ body {
 
 .material-info li {
   color: #475569;
-  padding: 4px 0;
+  padding: 6px 0;
   position: relative;
-  padding-left: 20px;
+  padding-left: 24px;
 }
 
 .material-info li::before {
@@ -302,14 +324,16 @@ body {
   left: 0;
   color: #10b981;
   font-weight: bold;
+  font-size: 16px;
 }
 
 /* Instructions */
 .instructions {
-  background: #fef3c7;
-  padding: 16px;
-  border-radius: 8px;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  padding: 20px;
+  border-radius: 12px;
   border-left: 4px solid #f59e0b;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.1);
 }
 
 .instructions p {
@@ -346,28 +370,29 @@ body {
   gap: 8px;
   z-index: 100;
   flex-wrap: wrap;
-  max-width: 300px;
+  max-width: 400px;
 }
 
 .viewer-controls button {
-  padding: 8px 12px;
+  padding: 10px 14px;
   background: rgba(255, 255, 255, 0.95);
   border: 1px solid #e2e8f0;
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
   color: #374151;
   cursor: pointer;
-  transition: all 0.2s ease;
-  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+  backdrop-filter: blur(15px);
   white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .viewer-controls button:hover {
   background: white;
   border-color: #cbd5e1;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
 }
 
 .viewer-controls button:active {
@@ -452,7 +477,7 @@ body {
 /* Responsive design */
 @media (max-width: 1200px) {
   .controls-panel {
-    width: 350px;
+    width: 380px;
   }
   
   .materials-grid {
@@ -494,12 +519,14 @@ body {
 }
 
 .material-preview.selected .material-swatch {
-  animation: materialChange 0.3s ease-out;
+  animation: materialChange 0.4s ease-out;
 }
 
 /* Focus states for accessibility */
 .part-button:focus,
 .material-preview:focus,
+.pattern-preview:focus,
+.stitching-button:focus,
 .viewer-controls button:focus {
   outline: 2px solid #3b82f6;
   outline-offset: 2px;
